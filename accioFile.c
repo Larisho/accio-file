@@ -14,8 +14,9 @@ Node *head = NULL;
 Node *tail = NULL;
 
 void enqueue(char *path) {
-  Node *node = malloc(sizeof(Node));
-  node->path = malloc(PATH_MAX * sizeof(char));
+  /* Check malloc for null  */
+  Node *node = malloc(sizeof *node);
+  node->path = malloc(strlen(path) + 1);
   strcpy(node->path, path);
   node->next = NULL;
   
@@ -49,26 +50,25 @@ char *dequeue() {
 }
 
 void cleanup_queue() {
-  Node *temp;
   while (head != NULL) {
-    temp = head;
+    Node *const temp = head;
     head = head->next;
     free(temp->path);
     free(temp);
   }
 }
 
-int isValidDirectory(char *dir) {
-  if (dir[0] == '.' && dir[1] == '\0') {
-    return 0;
-  } else if (dir[0] == '.' && dir[1] == '.' && dir[2] == '\0') {
-    return 0;
-  } else {
-    return 1;
+int isValidDirectory(const char *dir) {
+  if (dir[0] == '.') {
+    if (dir[1] == '\0' || (dir[1] == '.' && dir[2] == '\0')) {
+      return 0;
+    }
   }
+  
+  return 1;
 }
 
-char *readDir(char *file) {
+char *walkTree(const char *file) {
 
   DIR *d; /* Directory stream */
   struct dirent *dir; /* Directory object */
@@ -77,7 +77,7 @@ char *readDir(char *file) {
   char *path = malloc(PATH_MAX * sizeof(char)); /* Allocate space for path */
   
   /* While items are still left in the queue... */
-  while ((base = dequeue()) != NULL) {
+  while ((base = dequeue())) {
     /* If user doesn't have read access, skip it */
     if (access(base, R_OK) != 0) {
       free(base);
@@ -87,13 +87,10 @@ char *readDir(char *file) {
     /* Open directory stream */
     d = opendir(base);
     if (d) { /* If stream isn't null... */
-      for (int i = 0; (dir = readdir(d)) != NULL; i++) { /* For each file in the current directory... */
+      while ((dir = readdir(d))) { /* For each file in the current directory... */
 
-	if (strcmp(base, "/") != 0) { /* If base path isn't root... */
-	  sprintf(path, "%s/%s", base, dir->d_name); /* Concatenate base and d_name with a separator */
-	} else {
-	  sprintf(path, "%s%s", base, dir->d_name); /* Don't use separator */
-	}
+        /* compose path, adding separator if needed */
+        sprintf(path, "%s%s%s", base, (base[strlen(base)-1] == '/' ? "" : "/"), dir->d_name);
 
 	if (strcmp(dir->d_name, file) == 0) { /* If d_name and file being searched for are equal... */
 	  free(base); /* Don't forget to close the door on your way out! */
@@ -124,9 +121,9 @@ int main(int argc, char **argv) {
 
   enqueue(baseDir);
   
-  char *file = readDir(search);
+  char *file = walkTree(search);
   if (file == NULL) {
-    printf("File not found\n");
+    fprintf(stderr, "File not found\n");
     failedFlag = 1;
   } else {
     printf("%s\n", file);
