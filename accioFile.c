@@ -114,6 +114,10 @@ char *walkTree(const char *file) {
 }
 
 int main(int argc, char **argv) {
+  // TODO: Add option to use cwd as base
+  // TODO: Make option to find all occurances of string
+  // TODO: Check user input properly
+  // TODO: Colour output?
   char *search = *(argv + 2);
   char baseDir[PATH_MAX];
   int failedFlag = 0;
