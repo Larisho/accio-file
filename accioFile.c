@@ -115,17 +115,17 @@ char *walkTree(const char *file) {
 
 	lstat(path, &file_stat); /* Get stats for path */
 	if (errno != 0) {
-	  if (errno == EACCES) {
+          if (errno == EIO || errno == ENOENT || errno == ELOOP) {
+            perror(path);
+            free(path);
+            free(base);
+            closedir(d);
+            cleanup_queue();
+            exit(-1);
+          } else {
 	    errno = 0;
 	    continue;
-	  } else {
-	    perror(path);
-	    free(path);
-	    free(base);
-	    closedir(d);
-	    cleanup_queue();
-	    exit(-1);
-	  }
+	  } 
 	}
 	
 	if (S_ISDIR(file_stat.st_mode) && isValidDirectory(dir->d_name)) { /* If path points to directory and it isn't '.' or '..'... */
@@ -188,18 +188,18 @@ int walkTreeAll(const char *file) {
 
 	lstat(path, &file_stat); /* Get stats for path */
 	if (errno != 0) {
-	  if (errno == EACCES) {
-	    errno = 0;
-	    continue;
-	  } else {
-	    perror(path);
-	    free(path);
-	    free(base);
-	    closedir(d);
-	    cleanup_queue();
-	    exit(-1);
-	  }
-	}
+          if (errno == EIO || errno == ENOENT || errno == ELOOP) {
+            perror(path);
+            free(path);
+            free(base);
+            closedir(d);
+            cleanup_queue();
+            exit(-1);
+          } else {
+            errno = 0;
+            continue;
+          }
+        }
 	
 	if (S_ISDIR(file_stat.st_mode) && isValidDirectory(dir->d_name)) { /* If path points to directory and it isn't '.' or '..'... */
 	  enqueue(path); /* Add the directory to the queue */
